@@ -107,6 +107,9 @@
   /** Query keys replaced by withTls(); any existing values are dropped. */
   const TLS_KEYS = Object.freeze(['security', 'alpn', 'sni']);
 
+  /** alpn written when the original link had one: no h3. */
+  const TLS_ALPN = 'h2,http/1.1';
+
   /**
    * Returns the host of a host:port authority, without IPv6 brackets.
    * @param {string} authority
@@ -160,8 +163,10 @@
    * repeated key (compared case-insensitively) only the first occurrence is
    * kept, the one URLSearchParams.get() would read. With an `sni`, any
    * security, alpn and sni parameters are dropped and
-   * `security=tls&alpn=h3%2C%20h2&sni=<sni>` is inserted right after
+   * `security=tls&alpn=h2%2Chttp%2F1.1&sni=<sni>` is inserted right after
    * encryption=, or at the end of the query when there is no encryption=.
+   * alpn is only written back when the original link had one, and then
+   * without h3; a link without alpn keeps its client's default.
    * Kept parameters keep their order and encoding.
    * @param {string} tail
    * @param {string | null} sni
@@ -173,15 +178,19 @@
     const path = queryAt === -1 ? tail : tail.slice(0, queryAt);
     const query = queryAt === -1 ? '' : tail.slice(queryAt + 1);
 
+    const pairs = query.split('&');
+    const hadAlpn = pairs.some((pair) => pair !== '' && keyOf(pair) === 'alpn');
     const seen = new Set();
-    const params = query.split('&').filter((pair) => {
+    const params = pairs.filter((pair) => {
       const key = keyOf(pair);
       if (pair === '' || seen.has(key) || (sni !== null && TLS_KEYS.includes(key))) return false;
       seen.add(key);
       return true;
     });
     if (sni !== null) {
-      const tlsParams = ['security=tls', 'alpn=h3%2C%20h2', 'sni=' + encodeURIComponent(sni)];
+      const tlsParams = hadAlpn
+        ? ['security=tls', 'alpn=' + encodeURIComponent(TLS_ALPN), 'sni=' + encodeURIComponent(sni)]
+        : ['security=tls', 'sni=' + encodeURIComponent(sni)];
       const encryptionAt = params.findIndex((pair) => keyOf(pair) === 'encryption');
       params.splice(encryptionAt === -1 ? params.length : encryptionAt + 1, 0, ...tlsParams);
     }
