@@ -107,8 +107,8 @@
   /** Query keys replaced by withTls(); any existing values are dropped. */
   const TLS_KEYS = Object.freeze(['security', 'alpn', 'sni']);
 
-  /** alpn written when the original link had one: no h3. */
-  const TLS_ALPN = 'h2,http/1.1';
+  /** alpn written when the original link had one: h2 only, never h3. */
+  const TLS_ALPN = 'h2';
 
   /**
    * Returns the host of a host:port authority, without IPv6 brackets.
@@ -163,10 +163,10 @@
    * repeated key (compared case-insensitively) only the first occurrence is
    * kept, the one URLSearchParams.get() would read. With an `sni`, any
    * security, alpn and sni parameters are dropped and
-   * `security=tls&alpn=h2%2Chttp%2F1.1&sni=<sni>` is inserted right after
+   * `security=tls&alpn=h2&sni=<sni>` is inserted right after
    * encryption=, or at the end of the query when there is no encryption=.
-   * alpn is only written back when the original link had one, and then
-   * without h3; a link without alpn keeps its client's default.
+   * alpn is only written back when the original link had one, and then as
+   * h2 only; a link without alpn keeps its client's default.
    * Kept parameters keep their order and encoding.
    * @param {string} tail
    * @param {string | null} sni

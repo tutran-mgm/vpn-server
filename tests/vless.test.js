@@ -88,12 +88,12 @@ test('buildVlessUri with tls keeps the original host as SNI after a swap', () =>
   assert.equal(uri.match(/[?&]security=/g).length, 1);
 });
 
-test('buildVlessUri with tls replaces an existing alpn with h2,http/1.1 and handles a missing query', () => {
+test('buildVlessUri with tls replaces an existing alpn with h2 only and handles a missing query', () => {
   const withOld = parseVlessUri('vless://id@a.example:443?type=ws&SNI=old&ALPN=h3%2Ch2&encryption=none#x');
   const uri = buildVlessUri(withOld, { tls: true });
   assert.equal(uri,
-    'vless://id@a.example:443?type=ws&encryption=none&security=tls&alpn=h2%2Chttp%2F1.1&sni=a.example#x');
-  assert.equal(new URL(uri).searchParams.get('alpn'), 'h2,http/1.1');
+    'vless://id@a.example:443?type=ws&encryption=none&security=tls&alpn=h2&sni=a.example#x');
+  assert.equal(new URL(uri).searchParams.get('alpn'), 'h2');
   assert.equal(buildVlessUri(parseVlessUri('vless://id@[2001:db8::1]:443'), { tls: true }),
     'vless://id@[2001:db8::1]:443?security=tls&sni=2001%3Adb8%3A%3A1');
 });
